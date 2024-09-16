@@ -1,0 +1,52 @@
+services:
+  backend:
+    build:
+      context: .
+      target: development-image
+      dockerfile: Dockerfile
+    env_file: .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/src/
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: "postgres:15.7-alpine3.20"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/data/
+    environment:
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: "exit 0"
+
+  redis:
+    image: "redis:7.0.5-alpine"
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    command: poetry run celery -A src.infra worker -l INFO -E
+    env_file: .env
+    volumes:
+      - ./src:/src:ro
+    depends_on:
+      redis:
+        condition: service_started
+
+  celery-beat:
+    build: .
+    command: poetry run celery -A src.infra beat -l INFO
+    env_file: .env
+    volumes:
+      - ./src:/src:ro
+    depends_on:
+      redis:
+        condition: service_started
