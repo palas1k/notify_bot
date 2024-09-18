@@ -2,16 +2,13 @@ from datetime import datetime, date
 from typing import Any
 
 from sqlalchemy import func, CheckConstraint
-from sqlalchemy.orm import Mapped, mapped_column, declarative_base
+from sqlalchemy.orm import Mapped, mapped_column, declarative_base, DeclarativeBase
 
 from src.infra.postgres.utils import integer_id
 
-Base = declarative_base()
 
-
-class BaseDBModel(Base):
-    __abstract__ = True
-    __tablename__ : Any
+class BaseDBModel(DeclarativeBase):
+    __tablename__: Any
     __table_args__ = {'schema': 'tasks_schema'}
 
 
@@ -23,6 +20,6 @@ class TaskModel(BaseDBModel):
     id: Mapped[integer_id]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
     text: Mapped[str] = mapped_column(nullable=False)
-    sended: Mapped[bool] = mapped_column(default=False)
+    sent: Mapped[bool] = mapped_column(default=False)
     date: Mapped[datetime] = mapped_column(nullable=False)
     counter: Mapped[int] = mapped_column(default=0)

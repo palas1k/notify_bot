@@ -15,6 +15,6 @@ class CheckUserMiddleware(BaseMiddleware):
             event: Update,
             data: Dict[str, Any],
     ):
-        if event.message.from_user.id != cfg.telegram.main_chat_id:
+        if event.from_user.id != cfg.telegram.main_chat_id:
             return await event.message.answer('ты не имеешь права о ты не имеешь права')
         return await handler(event, data)

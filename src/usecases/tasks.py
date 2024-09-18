@@ -21,12 +21,11 @@ async def send_my_tasks():
     async with task_gateway.session.begin():
         tasks = await task_gateway.get_today_task()
         for task in tasks:
-            if task.date.strftime("%Y-%m-%d") == datetime.datetime.now().strftime("%Y-%m-%d"):
-                await bot.send_message(chat_id=cfg.telegram.main_chat_id, text=task.text)
-                if task.counter == 4:
-                    await task_gateway.update_task_status(task.id)
-                else:
-                    await task_gateway.update_task_counter(task.id)
+            await bot.send_message(chat_id=cfg.telegram.main_chat_id, text=task.text)
+            if task.counter == 4:
+                await task_gateway.update_task_status(task.id)
+            else:
+                await task_gateway.update_task_counter(task.id)
 
 
 @app.task

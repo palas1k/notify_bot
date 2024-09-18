@@ -6,7 +6,8 @@ from typing import Any
 @dataclass(slots=True)
 class TaskModelSchema:
     id: int
+    created_at: Any
     text: str
-    sended: bool
+    sent: bool
     date: Any
     counter: int
