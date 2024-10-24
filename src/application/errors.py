@@ -26,3 +26,11 @@ class NotFoundError(DatabaseError):
         super().__init__(
             message=f'Модель {model_name} не найдена',
         )
+
+
+class UniqueError(DatabaseError):
+
+    def __init__(self, model_name: str) -> None:
+        super().__init__(
+            f'Модель {model_name} содержит неуникальные значения',
+        )

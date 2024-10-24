@@ -4,10 +4,8 @@ from typing import Any
 
 
 @dataclass(slots=True)
-class TaskModelSchema:
+class UserModelSchema:
     id: int
-    created_at: Any
-    text: str
-    sent: bool
-    date: Any
-    counter: int
+    name: str
+    last_name: str
+    telegram_id: str

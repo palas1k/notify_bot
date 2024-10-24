@@ -21,7 +21,6 @@ RUN apt-get install -y --no-install-recommends gcc build-essential curl && rm -r
 
 RUN mkdir -m 777 /app
 WORKDIR /app
-COPY deploy ./app
 COPY ./pyproject.toml poetry.lock ./
 
 RUN curl -sSL https://install.python-poetry.org | python3 -
@@ -41,8 +40,6 @@ COPY --from=build-image --chown=user:user $POETRY_HOME $POETRY_HOME
 
 WORKDIR $PROJECT_PATH
 RUN poetry install
-
-COPY deploy /app/
 
 COPY --chown=user:user ./src /app/src
 COPY --chown=user:user ./alembic.ini app/alembic.ini

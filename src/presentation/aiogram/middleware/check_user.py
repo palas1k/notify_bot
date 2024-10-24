@@ -1,20 +1,25 @@
 from typing import Any, Awaitable, Callable, Dict
+
 from aiogram import BaseMiddleware
 from aiogram.types import Update
-from loguru import logger
+from dishka import FromDishka
+from dishka.integrations.aiogram_dialog import inject
 
-from src.config import get_config
-
-cfg = get_config()
+from src.infra.postgres.gateways import UserGateway
 
 
-class CheckUserMiddleware(BaseMiddleware):
+@inject
+class CheckUserChannelMiddleware(BaseMiddleware):
     async def __call__(
             self,
             handler: Callable[[Update, Dict[str, Any]], Awaitable[Any]],
             event: Update,
             data: Dict[str, Any],
-    ):
-        if event.from_user.id != cfg.telegram.main_chat_id:
-            return await event.message.answer('ты не имеешь права о ты не имеешь права')
-        return await handler(event, data)
+            user_gateway: FromDishka[UserGateway],
+    ) -> Any:
+        try:
+            await user_gateway.get_user_by_telegram_id(str(event.message.from_user.id))
+        except Exception:
+            return await event.bot.send_message(
+            )
+        await handler(event, data)

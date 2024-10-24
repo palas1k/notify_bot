@@ -20,9 +20,11 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./postgres_data:/data/
+      - data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: um_db
+
     healthcheck:
       test: "exit 0"
 
@@ -31,22 +33,5 @@ services:
     ports:
       - "6379:6379"
 
-  celery:
-    build: .
-    command: poetry run celery -A src.infra worker -l INFO -E
-    env_file: .env
-    volumes:
-      - ./src:/src:ro
-    depends_on:
-      redis:
-        condition: service_started
-
-  celery-beat:
-    build: .
-    command: poetry run celery -A src.infra beat -l INFO
-    env_file: .env
-    volumes:
-      - ./src:/src:ro
-    depends_on:
-      redis:
-        condition: service_started
+volumes:
+  data:

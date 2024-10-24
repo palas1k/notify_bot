@@ -2,15 +2,13 @@ from aiogram import Dispatcher, Bot
 from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram_dialog import setup_dialogs
-from dishka import FromDishka
-from loguru import logger
 from redis.asyncio import Redis
 
 from src.config import Config
-from src.infra.postgres.gateways import TaskGateway
-from src.presentation.aiogram.middleware.check_user import CheckUserMiddleware
 from src.presentation.aiogram.routes.main import router as main_router
-from src.presentation.aiogram.dialogs.tasks_crud import main_window as tasks_window
+from src.presentation.aiogram.dialogs.user_registration import main_window as users_window
+from src.presentation.aiogram.dialogs.scores import main_window as scores_window
+from src.presentation.aiogram.dialogs.main_menu import main_window as main_menu
 
 
 def setup_aiogram(config: Config) -> tuple[Bot, Dispatcher]:
@@ -21,9 +19,9 @@ def setup_aiogram(config: Config) -> tuple[Bot, Dispatcher]:
     dp = Dispatcher(storage=storage)
     setup_dialogs(dp)
     dp.include_routers(main_router,
-                       tasks_window
+                       users_window,
+                       scores_window,
+                       main_menu
                        )
-    dp.message.middleware(CheckUserMiddleware())
-    dp.callback_query.middleware(CheckUserMiddleware())
 
     return bot, dp

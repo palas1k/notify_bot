@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "notify-bot"
+name = "umschool-test"
 version = "0.1.0"
 description = ""
 authors = ["palas1k <liserg008@gmail.com>"]
@@ -19,6 +19,7 @@ orjson = "^3.10.7"
 redis = "^5.0.8"
 psycopg2-binary = "^2.9.9"
 celery = "^5.4.0"
+python-dotenv = "^1.0.1"
 
 
 [build-system]

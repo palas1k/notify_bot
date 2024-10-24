@@ -1,11 +1,11 @@
 from collections.abc import AsyncIterable
 
-from dishka import Provider, provide, Scope, provide_all, from_context
+from dishka import Provider, provide, Scope, provide_all
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, async_sessionmaker, AsyncSession
 
 from src.config import Config
-from src.infra.postgres.gateways import TaskGateway
+from src.infra.postgres.gateways import UserGateway, ScoreGateway
 
 
 class DishkaProvider(Provider):
@@ -44,7 +44,8 @@ class DishkaProvider(Provider):
             yield session
 
     _get_gateways = provide_all(
-        TaskGateway,
+        UserGateway,
+        ScoreGateway,
         scope=Scope.REQUEST
     )
 

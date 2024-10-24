@@ -13,15 +13,10 @@ class DatabaseConfig:
     password: str
     database: str
     driver: str = 'postgresql+asyncpg'
-    migrate: str = 'postgresql'
 
     @property
     def dsn(self) -> str:
         return f'{self.driver}://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}'
-
-    @property
-    def migrate_dsn(self) -> str:
-        return f'{self.migrate}://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}'
 
 
 @dataclass(slots=True)
@@ -49,13 +44,7 @@ class RedisConfig:
 @dataclass(slots=True)
 class TelegramConfig:
     token: str
-    main_chat_id: int
     fsm_storage_database: str = '1'
-
-
-@dataclass(slots=True)
-class CeleryConfig:
-    url: str
 
 
 @dataclass(slots=True)
@@ -64,12 +53,11 @@ class Config:
     logging: LoggingConfig
     redis: RedisConfig
     telegram: TelegramConfig
-    celery: CeleryConfig
 
 
 def get_config() -> Config:
     dynaconf = Dynaconf(
-        envvar_prefix='NOT',
+        envvar_prefix='UM',
         settings_file=[os.getenv('CONFIG_PATH')],
         load_dotenv=True,
     )

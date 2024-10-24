@@ -1,14 +1,14 @@
+from typing import Any
+
 from adaptix import Retort
-from sqlalchemy import delete, insert, update, select
+from sqlalchemy import delete, insert, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from datetime import date
-
-from sqlalchemy.orm import class_mapper
-
-from src.application.errors import DatabaseError
-from src.application.schema.task_model import TaskModelSchema
-from src.infra.postgres.tables import BaseDBModel, TaskModel
+from src.application.errors import DatabaseError, NotFoundError, UniqueError
+from src.application.schema.score_model import ScoreModelSchema
+from src.application.schema.user_model import UserModelSchema
+from src.infra.postgres.tables import BaseDBModel, UserModel, ScoreModel
 
 
 class BasePostgresGateway:
@@ -29,94 +29,94 @@ class BasePostgresGateway:
             raise e
 
 
-class TaskGateway(BasePostgresGateway):
+class UserGateway(BasePostgresGateway):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(
             retort=Retort(),
             session=session,
-            table=TaskModel
+            table=UserModel
         )
 
-    async def create_task(self,
-                          text: str,
-                          day: date) -> list[TaskModelSchema]:
+    async def create(self,
+                     name: str,
+                     last_name: str,
+                     telegram_id: str) -> UserModelSchema:
         stmt = (
-            insert(TaskModel)
+            insert(UserModel)
             .values(
-                text=text,
-                date=day,
-                counter=1,
+                name=name,
+                last_name=last_name,
+                telegram_id=telegram_id
             )
-            .returning(TaskModel.text,
-                       TaskModel.date,
-                       TaskModel.sent,
-                       TaskModel.id,
-                       TaskModel.counter,
-                       TaskModel.created_at)
+            .returning(*UserModel.group_by_fields())
         )
         try:
             result = (await self.session.execute(stmt)).mappings().first()
             if result is None:
                 raise DatabaseError
-            return self.retort.load([result], list[TaskModelSchema])
+            return self.retort.load(result, UserModelSchema)
         except DatabaseError as e:
             raise e
 
-    async def update_task_status(self,
-                                 task_id: int, ) -> int | str:
+    async def get_user_by_telegram_id(self,
+                                      telegram_id: str) -> UserModelSchema:
         stmt = (
-            update(TaskModel)
-            .where(TaskModel.id == int(task_id))
-            .values(sent=True)
+            select(*UserModel.group_by_fields())
+            .where(UserModel.telegram_id == telegram_id)
         )
+        result = (await self.session.execute(stmt)).mappings().first()
+        if result is None:
+            raise NotFoundError(model_name='user')
+        else:
+            return self.retort.load(result, UserModelSchema)
+
+
+class ScoreGateway(BasePostgresGateway):
+    def __init__(self, session: AsyncSession) -> None:
+        super().__init__(
+            retort=Retort(),
+            session=session,
+            table=ScoreModel
+        )
+
+    async def create(self, telegram_id: str) -> ScoreModelSchema:
+        stmt = (
+            insert(ScoreModel)
+            .values(
+                telegram_id=telegram_id)
+        ).returning(*ScoreModel.group_by_fields())
+
         try:
-            result = await self.session.execute(stmt)
-            if result.rowcount != 1:
-                raise DatabaseError
-            return task_id
-        except DatabaseError as e:
-            raise e
+            result = (await self.session.execute(stmt)).mappings().first()
+            if result is None:
+                raise UniqueError(model_name='score')
+            return self.retort.load(result, ScoreModelSchema)
+        except IntegrityError as e:
+            raise DatabaseError(message=str(e.orig)) from e
 
-    async def get_all_tasks(self) -> list[TaskModelSchema]:
+    async def get_by_telegram_id(self, telegram_id: str) -> ScoreModelSchema:
         stmt = (
-            select(TaskModel)
-            .where(TaskModel.sent == False)
-            .with_only_columns(TaskModel.text,
-                               TaskModel.date,
-                               TaskModel.sent,
-                               TaskModel.id,
-                               TaskModel.counter,
-                               TaskModel.created_at)
+            select(*ScoreModel.group_by_fields())
+            .where(ScoreModel.telegram_id == telegram_id)
+        )
+        result = (await self.session.execute(stmt)).mappings().first()
+        if result is None:
+            raise NotFoundError(model_name='score')
+        else:
+            return self.retort.load(result, ScoreModelSchema)
+
+    async def update(self, telegram_id: str, data: dict[str, Any]) -> ScoreModelSchema:
+        stmt = (
+            update(ScoreModel)
+            .where(ScoreModel.telegram_id == telegram_id)
+            .values(**data)
+            .returning(*ScoreModel.group_by_fields())
         )
 
-        result = (await self.session.execute(stmt)).mappings().fetchall()
-        return self.retort.load(result, list[TaskModelSchema]) if len(result) > 0 else []
-
-    async def get_today_task(self) -> list[TaskModelSchema]:
-        stmt = (
-            select(TaskModel)
-            .where(TaskModel.sent == False, TaskModel.date == date.today())
-            .with_only_columns(TaskModel.text,
-                               TaskModel.date,
-                               TaskModel.sent,
-                               TaskModel.id,
-                               TaskModel.counter,
-                               TaskModel.created_at)
-        )
-
-        result = (await self.session.execute(stmt)).mappings().fetchall()
-        return self.retort.load(result, list[TaskModelSchema]) if len(result) > 0 else []
-
-    async def update_task_counter(self, task_id: int):
-        stmt = (
-            update(TaskModel)
-            .where(TaskModel.id == int(task_id))
-            .values(counter=TaskModel.counter + 1)
-        )
         try:
-            result = await self.session.execute(stmt)
-            if result.rowcount != 1:
-                raise DatabaseError
-            return task_id
-        except DatabaseError as e:
-            raise e
+            result = (await self.session.execute(stmt)).mappings().first()
+            if result is None:
+                raise NotFoundError(model_name='score')
+        except IntegrityError as e:
+            raise DatabaseError(message=str(e.orig)) from e
+        return self.retort.load(result, ScoreModelSchema)

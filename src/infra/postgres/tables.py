@@ -1,25 +1,51 @@
 from datetime import datetime, date
 from typing import Any
 
-from sqlalchemy import func, CheckConstraint
-from sqlalchemy.orm import Mapped, mapped_column, declarative_base, DeclarativeBase
+from sqlalchemy import func, CheckConstraint, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
-from src.infra.postgres.utils import integer_id
+from src.infra.postgres.utils import integer_id, default_dict
 
 
 class BaseDBModel(DeclarativeBase):
     __tablename__: Any
-    __table_args__ = {'schema': 'tasks_schema'}
+    __table_args__ = {'schema': 'ege_schema'}
+
+    @classmethod
+    def group_by_fields(cls, exclude: list[str] | None = None) -> list:
+        """Берем имена всех колонок для группировки.
+
+        Args:
+            exclude: list[str] | None исключаемые поля
+
+        Returns:
+            list[колонка]
+        """
+
+        payload = []
+        if not exclude:
+            exclude = []
+
+        for column in cls.__table__.columns:
+            if column.key in exclude:
+                continue
+
+            payload.append(column)
+
+        return payload
 
 
-class TaskModel(BaseDBModel):
-    __tablename__ = "tasks"
-    __table_args__ = {'schema': 'tasks_schema'},
-    CheckConstraint('counter >= 0 AND counter <= 4', 'ck_counter_range')
-
+class UserModel(BaseDBModel):
+    __tablename__ = "user"
     id: Mapped[integer_id]
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
-    text: Mapped[str] = mapped_column(nullable=False)
-    sent: Mapped[bool] = mapped_column(default=False)
-    date: Mapped[datetime] = mapped_column(nullable=False)
-    counter: Mapped[int] = mapped_column(default=0)
+    name: Mapped[str] = mapped_column(String(30))
+    last_name: Mapped[str] = mapped_column(String(30))
+    telegram_id: Mapped[str] = mapped_column()
+
+
+class ScoreModel(BaseDBModel):
+    __tablename__ = "score"
+    id: Mapped[integer_id]
+    telegram_id: Mapped[str] = mapped_column(unique=True)
+    scores: Mapped[dict] = mapped_column(JSONB, default=default_dict)
